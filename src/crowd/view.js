@@ -489,7 +489,9 @@ export function createCrowdView(scene, game) {
     if (key in OM) return OM[key];
     const d = OFFICER_MODELS[key];
     if (!d) return (OM[key] = null);
-    const n = 2, gp = {};
+    // capacity: every officer slot may wear this model at once (ROOT's three forks, four sysops) — an instance past the
+    // pool's end would throw out of setMatrixAt on every frame it is on screen
+    const n = CROWD.officerSlots, gp = {};
     for (const k of ['hips', 'torso', 'head', 'arm', 'thigh', 'shin']) gp[k] = sculpt(d.parts[k], d.voxel || V, 0.1);
     const P = { hips: mk(gp.hips, n), torso: mk(gp.torso, n), head: mk(gp.head, n), arm: mk(gp.arm, n * 2), thigh: mk(gp.thigh, n * 2), shin: mk(gp.shin, n * 2) };
     return (OM[key] = { d, P, w: mk(boxesGeometry(d.weapon), n), haft: d.broken ? mk(boxesGeometry(d.broken.haft), n) : null,
@@ -499,7 +501,9 @@ export function createCrowdView(scene, game) {
   on('scenario', () => {
     const CH = game.story.chapter, sk = (CH && CH.skin) || {};
     applySkin(sk.foe || 'wei', sk.ally || 'shu');
-    for (const k in (CH && CH.OFF) || {}) if (CH.OFF[k].model) officerModel(CH.OFF[k].model);   // built under the loading card
+    // every registered model is built now, under the loading card (main.js then compiles their programs): a model first
+    // drawn mid-fight — a boss's mask-off swap (story api.model) — would otherwise be sculpted and compiled on that frame
+    for (const k in OFFICER_MODELS) officerModel(k);
   });
 
   const cur = new Float32Array(N * NCH), T = new Float32Array(NCH), C = new Float32Array(NCH), seen = new Uint8Array(N);
